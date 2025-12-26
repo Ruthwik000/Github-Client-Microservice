@@ -1,0 +1,41 @@
+services:
+  # Main application service
+  - type: web
+    name: github-rag-microservice
+    runtime: docker
+    plan: starter
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama3-70b-8192
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_ENVIRONMENT
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        value: github-code-search
+      - key: CACHE_DIR
+        value: /app/cache
+      - key: LOG_LEVEL
+        value: info
+      - key: MAX_FILE_SIZE_MB
+        value: 10
+      - key: MAX_REPO_SIZE_MB
+        value: 1000
+      - key: CHUNK_SIZE
+        value: 1000
+      - key: CHUNK_OVERLAP
+        value: 200
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100

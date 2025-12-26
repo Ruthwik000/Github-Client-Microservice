@@ -1,0 +1,30 @@
+# Render build optimization - exclude unnecessary files
+
+# Documentation
+*.md
+docs/
+chrome-extension/
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+coverage/
+
+# Cache and temp
+cache/
+.cache/
+tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore

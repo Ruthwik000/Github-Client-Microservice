@@ -15,9 +15,9 @@ A production-grade AI microservice for semantic code search and Q&A over GitHub 
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express
 - **Vector Database**: Pinecone
-- **Cache**: Redis + Local Disk
-- **LLM**: OpenAI API
-- **Embeddings**: OpenAI text-embedding-3-small
+- **Cache**: In-memory (local storage)
+- **LLM**: Groq (llama3-70b-8192)
+- **Embeddings**: Xenova/all-MiniLM-L6-v2 (local)
 
 ## Architecture
 
@@ -59,9 +59,10 @@ A production-grade AI microservice for semantic code search and Q&A over GitHub 
 ### Prerequisites
 
 - Node.js 18+
-- Redis server
 - Pinecone account
-- OpenAI API key
+- Groq API key
+
+Note: Redis is not required - the app uses in-memory cache
 
 ### Installation
 
@@ -78,18 +79,14 @@ Create a `.env` file:
 PORT=3000
 NODE_ENV=development
 
-# OpenAI
-OPENAI_API_KEY=your_openai_api_key
+# Groq
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama3-70b-8192
 
 # Pinecone
 PINECONE_API_KEY=your_pinecone_api_key
 PINECONE_ENVIRONMENT=your_pinecone_environment
 PINECONE_INDEX_NAME=github-code-search
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
 
 # Storage
 CACHE_DIR=./cache
@@ -97,6 +94,8 @@ MAX_FILE_SIZE_MB=10
 CHUNK_SIZE=1000
 CHUNK_OVERLAP=200
 ```
+
+Note: Redis is not needed - uses in-memory cache
 
 ### Running
 
@@ -192,6 +191,42 @@ src/
 ├── utils/           # Utilities
 └── server.ts        # Entry point
 ```
+
+## Deployment
+
+### Deploy to Render
+
+The easiest way to deploy this service is using Render:
+
+1. **Push your code to Git** (GitHub, GitLab, or Bitbucket)
+
+2. **Deploy using Blueprint**:
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - Click "New" → "Blueprint"
+   - Connect your repository
+   - Render will automatically detect `render.yaml`
+   - Set your API keys (GROQ_API_KEY, PINECONE_API_KEY, PINECONE_ENVIRONMENT)
+   - Click "Apply"
+
+3. **Create Pinecone Index**:
+   ```bash
+   # Dimensions: 384 (for Xenova/all-MiniLM-L6-v2)
+   # Metric: cosine
+   ```
+
+4. **Test your deployment**:
+   ```bash
+   curl https://your-app.onrender.com/api/v1/health
+   ```
+
+📖 **Full deployment guide**: See [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md)
+
+### Other Deployment Options
+
+- **Docker**: `docker-compose up -d`
+- **AWS ECS**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **Google Cloud Run**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **Kubernetes**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ## Development
 
