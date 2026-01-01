@@ -499,7 +499,7 @@ function handleIngestionFailed(error) {
 // Generate summary
 async function generateSummary(ingestionData) {
   try {
-    // Query for general repository information with focus on README/docs
+    // Query for general repository information with better query
     const response = await fetch(`${API_BASE_URL}/query`, {
       method: "POST",
       headers: {
@@ -508,9 +508,9 @@ async function generateSummary(ingestionData) {
       body: JSON.stringify({
         repoId: currentRepo,
         query:
-          "README documentation overview main features installation setup usage",
-        topK: 15,
-        minScore: 0.25,
+          "What is this repository about? Describe the main purpose, key features, architecture, and how to use it. Include information from README, documentation, and main code files.",
+        topK: 20,  // Increased from 15
+        minScore: 0.3,  // Lowered from 0.25 for better results
       }),
     });
 

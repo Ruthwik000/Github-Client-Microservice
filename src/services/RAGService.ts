@@ -61,8 +61,8 @@ export class RAGService {
         "Search results from Pinecone",
       );
 
-      // Filter by minimum score if specified (lowered from 0.7 to 0.5 for local embeddings)
-      const minScore = request.minScore || 0.5;
+      // Filter by minimum score if specified (lowered for local embeddings)
+      const minScore = request.minScore || 0.3;  // Lowered from 0.5 to 0.3
       const relevantResults = searchResults.filter(
         (result) => result.score >= minScore,
       );
