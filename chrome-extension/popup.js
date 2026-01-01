@@ -1,5 +1,5 @@
 // Configuration
-const API_BASE_URL = "https://github-client-microservice-evqm.onrender.com/api/v1";
+let API_BASE_URL = "http://localhost:3000/api/v1";
 const STORAGE_KEYS = {
   API_URL: "apiUrl",
   INGESTED_REPOS: "ingestedRepos",
@@ -75,19 +75,69 @@ async function loadSettings() {
 // Check API connection
 async function checkConnection() {
   try {
-    const response = await fetch(`${API_BASE_URL}/health`);
-    if (response.ok) {
-      setConnectionStatus(true);
-    } else {
-      setConnectionStatus(false);
+    console.log('Checking connection to:', API_BASE_URL);
+    
+    // Show checking status
+    if (elements.statusLabel) {
+      elements.statusLabel.textContent = "Connecting...";
     }
+    
+    // Retry logic for Render cold starts (can take 30-60 seconds)
+    let lastError = null;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds between retries
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(`${API_BASE_URL}/health`, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeout);
+        
+        console.log('Health check response:', response.status, response.ok);
+        
+        if (response.ok) {
+          setConnectionStatus(true);
+          return;
+        } else if (response.status === 502 || response.status === 503) {
+          // Backend is waking up, retry
+          console.log(`Backend waking up (${response.status}), retrying in ${retryDelay}ms...`);
+          lastError = new Error(`Backend starting (${response.status})`);
+          if (i < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            continue;
+          }
+        } else {
+          lastError = new Error(`HTTP ${response.status}`);
+          break;
+        }
+      } catch (fetchError) {
+        console.log('Fetch error:', fetchError.message);
+        lastError = fetchError;
+        if (i < maxRetries - 1 && (fetchError.name === 'AbortError' || fetchError.message.includes('fetch'))) {
+          console.log(`Retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue;
+        }
+        break;
+      }
+    }
+    
+    // All retries failed
+    console.error('Connection check failed after retries:', lastError);
+    setConnectionStatus(false, lastError?.message);
   } catch (error) {
-    setConnectionStatus(false);
+    console.error('Connection check failed:', error);
+    setConnectionStatus(false, error.message);
   }
 }
 
 // Set connection status
-function setConnectionStatus(connected) {
+function setConnectionStatus(connected, errorMsg = null) {
   if (connected) {
     elements.statusDot.classList.add("connected");
     elements.statusDot.classList.remove("error");
@@ -95,7 +145,13 @@ function setConnectionStatus(connected) {
   } else {
     elements.statusDot.classList.remove("connected");
     elements.statusDot.classList.add("error");
-    elements.statusLabel.textContent = "Not connected";
+    if (errorMsg && errorMsg.includes('502')) {
+      elements.statusLabel.textContent = "Backend starting...";
+      elements.statusLabel.title = "Render free tier is waking up. This can take 30-60 seconds.";
+    } else {
+      elements.statusLabel.textContent = "Not connected";
+      elements.statusLabel.title = errorMsg || "Cannot reach backend";
+    }
   }
 }
 
